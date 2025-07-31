@@ -127,6 +127,9 @@ export default function Verifier() {
 		<Row className="mb-0">
 			<Col>
 				<h1 className="mb-0">Bust`a Gift verifier</h1>
+				<small>
+					<a href="https://github.com/cqpbet/bustagift-verifier" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>source code</a>
+				</small>
 			</Col>
 		</Row>
 		<Row className="mt-3 mb-2">
