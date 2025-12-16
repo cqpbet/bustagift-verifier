@@ -3,7 +3,7 @@ import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { CHAIN_LENGTH, PUBLIC_SECRET } from "../libs/config.js";
 import SHA256 from "crypto-js/sha256";
-import { gameResult } from "../libs/utils.js";
+import { gameResultInt } from "../libs/utils.js";
 
 function isValid(value) {
 	return value !== undefined && value !== null;
