@@ -17,10 +17,10 @@ function isEmpty(value) {
 }
 
 function RoundResult({ values }) {
-	return <tr className={values.current ? "fw-bold" : null}>
-		<td>#{values.gameId}</td>
-		<td>{isValid(values.hash) ? "x" + gameResult(PUBLIC_SECRET, values.hash).toFixed(2) : "?"}</td>
-	</tr>;
+  return <tr className={values.current ? "fw-bold" : null}>
+    <td>#{values.gameId}</td>
+    <td>{isValid(values.hash) ? "x" + (gameResultInt(PUBLIC_SECRET, values.hash) / 100).toFixed(2) : "?"}</td>
+  </tr>;
 }
 
 function ValidationResult({ values }) {
