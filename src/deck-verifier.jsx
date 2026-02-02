@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useForm } from "react-hook-form";
-import { CHAIN_LENGTH, PUBLIC_SECRET } from "../libs/config.js";
 import SHA256 from "crypto-js/sha256";
-import { gameResultInt } from "../libs/utils.js";
 import { DefaultHeader } from "./header.jsx";
-
-const CHAIN_LENGTH_PAGE = CHAIN_LENGTH / 200;
+import { createDefaultDeck52 } from "../libs/deck.js";
 
 function isValid(value) {
 	return value !== undefined && value !== null;
@@ -19,60 +16,76 @@ function isEmpty(value) {
 	return true;
 }
 
-function RoundResult({ values }) {
-  return <tr className={values.current ? "fw-bold" : null}>
-    <td>#{values.gameId}</td>
-    <td>{isValid(values.hash) ? "x" + (gameResultInt(PUBLIC_SECRET, values.hash) / 100).toFixed(2) : "?"}</td>
-  </tr>;
+const rankSymbolMap = {
+	2: "2",
+	3: "3",
+	4: "4",
+	5: "5",
+	6: "6",
+	7: "7",
+	8: "8",
+	9: "9",
+	10: "10",
+	11: "J",
+	12: "Q",
+	13: "K",
+	14: "A",
+}
+
+const suitSymbolMap = {
+	"hearts": "♥",
+	"diamonds": "♦",
+	"spades": "♠",
+	"clubs": "♣",
+}
+
+const suitColorMap = {
+	"hearts": "#FF0000",
+	"diamonds": "#FF0000",
+	"spades": "#000000",
+	"clubs": "#000000",
+}
+
+function Card({ card }) {
+	const color = suitColorMap[card.suit];
+	const suit = suitSymbolMap[card.suit];
+	const rank = rankSymbolMap[card.rank];
+
+	return <div style={{ margin: 5, color: color, background: "#fcfcfc", borderRadius: 10, border: "1px solid #000000", position: "relative", width: 65, height: 90 }}>
+		<div style={{ position: "absolute", left: 10, top: 10, fontSize: 30, lineHeight: 1, fontWeight: "bold" }}>
+			{rank}
+		</div>
+		<div style={{ position: "absolute", right: 10, bottom: 5, fontSize: 50, lineHeight: 1 }}>
+			{suit}
+		</div>
+	</div>;
 }
 
 function ValidationResult({ values }) {
 	const [ wrongCommitment, setWrongCommitment ] = useState(false);
-	const [ list, setList ] = useState([]);
+	const [ deck, setDeck ] = useState([]);
 
 	useEffect(() => {
 		let wrongCommitment = false;
 		const list = [];
 
 		if (!isEmpty(values.hash)) {
-			const commitment = SHA256(values.gameId + ":" + values.hash).toString();
+			const commitment = SHA256(values.hash).toString();
 			wrongCommitment = commitment !== values.commitment;
 		}
 
-		if (!wrongCommitment) {
-			if (isEmpty(values.hash)) {
-				list.push({
-					gameId: values.gameId,
-					hash: null,
-					current: true,
-				});
-			} else {
-				list.push({
-					gameId: values.gameId,
-					hash: values.hash,
-					current: true,
-				});
+		if (!wrongCommitment && !isEmpty(values.hash)) {
+			const deck = createDefaultDeck52();
+			deck.shuffleByHash(values.hash);
+
+			const array = [];
+			while (!deck.isEmpty()) {
+				array.push(deck.draw());
 			}
-
-			let gameId = values.gameId - 1;
-			let hash = values.commitment;
-			const length = Math.min(values.num - 1, gameId % CHAIN_LENGTH_PAGE);
-
-			for (let i = 0; i < length; ++i) {
-				list.push({
-					gameId: gameId,
-					hash: hash,
-					current: false,
-				});
-
-				hash = SHA256(gameId + ":" + hash).toString();
-				gameId -= 1;
-			}
+			setDeck(array);
 		}
 
 		setWrongCommitment(wrongCommitment);
-		setList(list);
-
 	}, [ values ]);
 
 	if (wrongCommitment) {
@@ -85,25 +98,25 @@ function ValidationResult({ values }) {
 		</>;
 	}
 
+	if (isEmpty(values.hash)) {
+		return <Row className="mt-4 fw-bold">
+			<Col>
+				❌ Unknown hash
+			</Col>
+		</Row>
+	}
+
 	return <>
 		<Row className="mt-4 fw-bold">
 			<Col>
-				{isEmpty(values.hash) ? "Unknown hash" : "✅ Correct commitment"}
+				✅ Correct
 			</Col>
 		</Row>
 		<Row className="mt-2">
 			<Col>
-				<table className="table table-borderless">
-					<thead>
-						<tr>
-							<th scope="col">Game Number</th>
-							<th scope="col">Multiplier</th>
-						</tr>
-					</thead>
-					<tbody>
-						{list.map((item) => <RoundResult key={item.gameId} values={item}/>)}
-					</tbody>
-				</table>
+				<div className={"d-flex flex-wrap"}>
+					{ deck.map((card, index) => <Card key={index} card={card} />) }
+				</div>
 			</Col>
 		</Row>
 	</>;
@@ -137,7 +150,7 @@ export default function Verifier() {
 				<p>Bust’a Gift is provably fair, meaning that every player can independently verify the results of any round.</p>
 				<ol>
 					<li>Open the game information page for the round you want to check.</li>
-					<li>Copy <b>Game Number</b>, <b>Commitment</b>, and <b>Hash</b> (optional) from the round details and paste them into the form below.</li>
+					<li>Copy <b>Commitment</b>, and <b>Hash</b> from the round details and paste them into the form below.</li>
 					<li>Make sure the round results match the data from the game.</li>
 				</ol>
 			</Col>
@@ -145,18 +158,6 @@ export default function Verifier() {
 		<Row>
 			<Col>
 				<Form onSubmit={handleSubmit(onSubmit)}>
-					<Form.Group className="mb-3">
-						<InputGroup>
-							<InputGroup.Text style={{ width: 150 }}>Game Number</InputGroup.Text>
-							<Form.Control type="number"
-								{...register("gameId", {
-									required: true,
-									min: 1,
-									valueAsNumber: true,
-								})}
-							/>
-						</InputGroup>
-					</Form.Group>
 					<Form.Group className="mb-3">
 						<InputGroup>
 							<InputGroup.Text style={{ width: 150 }}>Commitment</InputGroup.Text>
@@ -177,18 +178,6 @@ export default function Verifier() {
 									required: false,
 									minLength: 64,
 									maxLength: 64,
-								})}
-							/>
-						</InputGroup>
-					</Form.Group>
-					<Form.Group className="mb-3">
-						<InputGroup>
-							<InputGroup.Text style={{ width: 150 }}>Rounds</InputGroup.Text>
-							<Form.Control type="number"
-								{...register("num", {
-									required: true,
-									min: 1,
-									max: 1000000,
 								})}
 							/>
 						</InputGroup>
