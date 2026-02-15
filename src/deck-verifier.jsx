@@ -122,14 +122,15 @@ function ValidationResult({ values }) {
 	</>;
 }
 
-export default function Verifier() {
+export default function Verifier({ params = {} }) {
 	const {
 		formState: { isValid: isFormValid },
 		handleSubmit,
 		register,
 	} = useForm({
 		defaultValues: {
-			num: 50,
+			commitment: params.commitment || "",
+			hash: params.hash || "",
 		},
 	});
 

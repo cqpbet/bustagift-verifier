@@ -19,6 +19,11 @@ export function DefaultHeader() {
 					<a href="/bustagift-verifier/#/deck">deck verifier</a>
 				</small>
 			</Col>
+			<Col>
+				<small>
+					<a href="/bustagift-verifier/#/roll">roll verifier</a>
+				</small>
+			</Col>
 		</Row>
 	</>;
 }

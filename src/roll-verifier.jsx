@@ -3,7 +3,7 @@ import { Button, Col, Container, Form, InputGroup, Row } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { CHAIN_LENGTH, PUBLIC_SECRET } from "../libs/config.js";
 import SHA256 from "crypto-js/sha256";
-import { gameResultInt } from "../libs/utils.js";
+import { rouletteAngle } from "../libs/utils.js";
 import { DefaultHeader } from "./header.jsx";
 
 const CHAIN_LENGTH_PAGE = CHAIN_LENGTH / 200;
@@ -19,11 +19,57 @@ function isEmpty(value) {
 	return true;
 }
 
+function RouletteAngleSvg({ angle }) {
+	const size = 60;
+	const cx = size / 2;
+	const cy = size / 2;
+	const r = size / 2 - 4;
+
+	const markerAngle = (-angle - 90) * (Math.PI / 180);
+	const mx = cx + r * Math.cos(markerAngle);
+	const my = cy + r * Math.sin(markerAngle);
+	const innerR = r - 8;
+	const mix = cx + innerR * Math.cos(markerAngle);
+	const miy = cy + innerR * Math.sin(markerAngle);
+
+	return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+		<circle cx={cx} cy={cy} r={r} fill="none" stroke="#00000033" strokeWidth="1.5" />
+		<line x1={cx} y1={cy - r} x2={cx} y2={cy - r + 8} stroke="#000000CC" strokeWidth="1.5" strokeLinecap="round" />
+		<line x1={mix} y1={miy} x2={mx} y2={my} stroke="#000000" strokeWidth="1.5" strokeLinecap="round" />
+		<text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="#000000" fontSize="12" fontWeight="bold">{angle.toFixed(1)}°</text>
+	</svg>;
+}
+
+function RouletteAngleUnknownSvg() {
+	const size = 60;
+	const cx = size / 2;
+	const cy = size / 2;
+	const r = size / 2 - 4;
+
+	return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+		<circle cx={cx} cy={cy} r={r} fill="none" stroke="#00000033" strokeWidth="1.5" />
+		<line x1={cx} y1={cy - r} x2={cx} y2={cy - r + 8} stroke="#000000CC" strokeWidth="1.5" strokeLinecap="round" />
+		<text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="#00000066" fontSize="14" fontWeight="bold">?</text>
+	</svg>;
+}
+
 function RoundResult({ values }) {
-  return <tr className={values.current ? "fw-bold" : null}>
-    <td>#{values.gameId}</td>
-    <td>{isValid(values.hash) ? "x" + (gameResultInt(PUBLIC_SECRET, values.hash) / 100).toFixed(2) : "?"}</td>
-  </tr>;
+	if (isValid(values.hash)) {
+		const { angle } = rouletteAngle(PUBLIC_SECRET, values.hash);
+		return <tr className={values.current ? "fw-bold" : null}>
+			<td>#{values.gameId}</td>
+			<td>
+				<RouletteAngleSvg angle={angle} />
+			</td>
+		</tr>;
+	}
+
+	return <tr className={values.current ? "fw-bold" : null}>
+		<td>#{values.gameId}</td>
+		<td>
+			<RouletteAngleUnknownSvg />
+		</td>
+	</tr>;
 }
 
 function ValidationResult({ values }) {
@@ -97,7 +143,7 @@ function ValidationResult({ values }) {
 					<thead>
 						<tr>
 							<th scope="col" style={{ width: 150 }}>Game Number</th>
-							<th scope="col">Multiplier</th>
+							<th scope="col">Angle</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -109,7 +155,7 @@ function ValidationResult({ values }) {
 	</>;
 }
 
-export default function Verifier({ params = {} }) {
+export default function RollVerifier({ params = {} }) {
 	const {
 		formState: { isValid: isFormValid },
 		handleSubmit,
@@ -137,7 +183,7 @@ export default function Verifier({ params = {} }) {
 		</Row>
 		<Row className="mt-3 mb-2">
 			<Col>
-				<p>Bust’a Gift is provably fair, meaning that every player can independently verify the results of any round.</p>
+				<p>Bust'a Gift Rolls is provably fair, meaning that every player can independently verify the results of any round.</p>
 				<ol>
 					<li>Open the game information page for the round you want to check.</li>
 					<li>Copy <b>Game Number</b>, <b>Commitment</b>, and <b>Hash</b> (optional) from the round details and paste them into the form below.</li>

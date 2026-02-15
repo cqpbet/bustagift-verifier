@@ -5,10 +5,21 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 import VerifierPage from "./verifier.jsx";
 import DeckVerifierPage from "./deck-verifier.jsx";
+import RollVerifierPage from "./roll-verifier.jsx";
 
 const map = {
 	"": VerifierPage,
 	"#/deck": DeckVerifierPage,
+	"#/roll": RollVerifierPage,
+}
+
+function getRouteAndParams() {
+	const hash = window.location.hash;
+	const qIdx = hash.indexOf("?");
+	const route = qIdx >= 0 ? hash.slice(0, qIdx) : hash;
+	const searchStr = qIdx >= 0 ? hash.slice(qIdx + 1) : window.location.search.slice(1);
+	const params = Object.fromEntries(new URLSearchParams(searchStr));
+	return { route, params };
 }
 
 function Router() {
@@ -26,8 +37,9 @@ function Router() {
 		}
 	}, []);
 
-	const PageClass = map[page] || VerifierPage;
-	return <PageClass />;
+	const { route, params } = getRouteAndParams();
+	const PageClass = map[route] || VerifierPage;
+	return <PageClass params={params} />;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

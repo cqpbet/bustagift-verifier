@@ -48,3 +48,12 @@ export function calculateScoreInt(totalTON) {
 	if (t < 2) return Math.max(Math.floor(t / 2 * 100), 1);
 	return Math.floor(Math.log2(t) * 100);
 }
+
+export function rouletteAngle(key, gameHash) {
+	const nBits = 52;
+	const hash = HmacSHA256(gameHash, key).toString(Hex);
+	const seed = hash.slice(0, nBits / 4);
+	const r = parseInt(seed, 16);
+	const X = r / Math.pow(2, nBits);
+	return { value: X, angle: X * 360 };
+}
